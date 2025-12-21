@@ -22,7 +22,7 @@ db = mysql.connector.connect(
 cursor = db.cursor()
 
 
-def call_llm(message_history):
+def call_llm(message_history): # mengembalikan respon dari model 
     response = client.chat.completions.create(
         model="tngtech/deepseek-r1t-chimera:free",
         messages=message_history
@@ -31,10 +31,7 @@ def call_llm(message_history):
 
 
 
-
-# user_id=""
-
-def login_user(username):
+def login_user(username): # sebagai pengindentifikasi apakah user sudah terdaftar atau belum
     sql = "SELECT id FROM users WHERE username = %s;"
     data = [username]
     cursor.execute(sql, data)
@@ -61,14 +58,14 @@ def login_user(username):
 
 
 
-def save_message(user_id,role,content):
+def save_message(user_id,role,content): # menyimpan history chat pada database
     value = (user_id,role,content)
-    sql = ("insert into messages (user_id,role,content) values (%d,%s,%s)")
+    sql = ("insert into messages (user_id,role,content) values (%s,%s,%s)")
     cursor.execute(sql,value)
     db.commit()
 
 
-def load_message_history(user_id):
+def load_message_history(user_id): # mengambil history chat dari database
     history=[]
     sql = f"select role,content from messages where user_id= %s order by created_at asc;"
     value = (user_id,)
@@ -82,7 +79,20 @@ def load_message_history(user_id):
         history.append(data_dict)  
     return history
 
+def clear_chat_history(user_id): # menghapus semua history chat pada database
     
+    sql = ("delete from messages where user_id=%s;")
+    value = (user_id,)
+    cursor.execute(sql,value)
+    sql = ("insert into messages (user_id,role,content) values (%s,%s,%s);")
+    value = (user_id,'system','you are a study assistant')
+    cursor.execute(sql,value)
+    db.commit()
+    return "Semua history berhasil dihapus"
+
+
+def multiple_chat_session(): # opsional but recommded
+    pass
 
  
 # cursor.execute("select role,content from messages where user_id=%s order by created_at asc;",(user_id,))
@@ -101,15 +111,27 @@ def main():
     message_history=load_message_history(user_id)
     while True:
         typing_user = input("User: ")
-        save_message(user_id,"user",content=typing_user)
-        message_history.append({'role': 'user', 'content': typing_user})
-        if typing_user.lower() == "keluar":
-            return False
-
-        ai_reply = call_llm(message_history)
-        save_message(user_id,"assistant",content=ai_reply)
-        message_history.append({'role': 'assistant', 'content': ai_reply})
-        print(f"AI: {ai_reply}")
+        
+        if typing_user.startswith("/"):
+            if typing_user.endswith("exit"):
+                print(f"Good bye {username} 🫡")
+                return False
+            elif typing_user.endswith("clear"):
+                print(clear_chat_history(user_id))
+            elif typing_user.endswith("help"):
+                print("List Commands System:"\
+                "\n/exit  - Close program" \
+                "\n/help  - Show list commands system" \
+                "\n/clear - Delete messages history")
+            else:
+                print("That command not available")
+        else:
+            save_message(user_id,"user",content=typing_user)
+            message_history.append({'role': 'user', 'content': typing_user})
+            ai_reply = call_llm(message_history)
+            save_message(user_id,"assistant",content=ai_reply)
+            message_history.append({'role': 'assistant', 'content': ai_reply})
+            print(f"AI: {ai_reply}")
 
 
 if __name__ == "__main__":
