@@ -15,6 +15,7 @@ chat_history = [
     {'role':'system','content':'you are a study assistant'}
 ]
 
+# function untuk melakukan save history kedalam file json dengan jumlah yang ditentukan
 def save_history(filename, number):
     filename='history_chat.json'
     data_of_saved = chat_history[:number+1] if len(chat_history) > number else chat_history
