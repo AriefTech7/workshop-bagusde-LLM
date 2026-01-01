@@ -3,10 +3,11 @@ import scipy.io.wavfile as wv
 from config import client
 from pathlib import Path
 from playsound import playsound
+import os
 
 
 # function untuk merekam suara dan menyimpannya pada sebuah file
-def record_voice(seconds=5,filename='input.wav', fs=44100):
+def record_voice(seconds=7,filename='input.wav', fs=44100):
     print("Merekam user...")
     audio = sd.rec(
         int(seconds * fs), 
@@ -40,7 +41,7 @@ def respon_ai(chat, chat_history):
         temperature=0.7
     )
     ai = ai.choices[0].message.content
-    print(f"AI: {chat}")
+    print(f"AI: {ai}")
 
     chat_history.append({'role':'assistant', 'content':chat})
     return  ai, chat_history   
@@ -55,7 +56,8 @@ def tts(text, file_out="output_audio.mp3"):
     ) as audio:
         audio.stream_to_file(out_audio)
     print("AI berbicara...")
-    playsound(str(out_audio))
+    playsound(str(out_audio),True)
+    os.remove(out_audio)
 
 # function yang menjadi induk untuk menjalankan semua function kedalan function ini
 def run_voice():

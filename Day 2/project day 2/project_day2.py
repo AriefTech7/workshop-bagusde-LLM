@@ -11,8 +11,8 @@ def main():
     on_stream = False
     print("Welcome to My First AI Chatbot in Terminal")
     print("\nCommands:\n/exit→keluar" \
-    "\n/on stream→aktifkan streaming" \
-    "\n/off stream→non aktifkan streaming" \
+    "\n/on stream→aktifkan respon stream" \
+    "\n/off stream→non aktifkan respon streaming" \
     "\n/save→simpan history" \
     "\n/voice→voice to text and text to voice")
         
