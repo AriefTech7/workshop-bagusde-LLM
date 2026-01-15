@@ -1,0 +1,14 @@
+[
+  {
+    "role": "system",
+    "content": "you are a study assistant"
+  },
+  {
+    "role": "user",
+    "content": "give me a motivation"
+  },
+  {
+    "role": "assistant",
+    "content": "Sure! Remember, every small step you take toward your goals adds up to significant progress over time. It’s normal to face challenges, but each obstacle is an opportunity to learn and grow. Stay focused on your purpose, and don’t forget to celebrate your achievements, no matter how small. You have the strength and determination to overcome anything that comes your way. Keep pushing forward — your future self will thank you for it!"
+  }
+]
