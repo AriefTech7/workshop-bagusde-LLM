@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()
-
+import requests
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI # chatopenai berfungsi untuk memanggil llm openai
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder 
@@ -20,7 +20,7 @@ def multiply(a:float, b:float)-> float:
     return a * b
 
 @tool
-def add(a:int, b:int)-> int:
+def add(a:int, b:int)-> int: # function yang akan dijadikan tool harus memiliki Type Annotation(fitur ini berfungsi untuk menyarankan type data yang diinputkan)
     """Menambahkan dua angka dan kembalikan nilainya"""
     return a + b
 
@@ -28,8 +28,35 @@ def add(a:int, b:int)-> int:
 def to_lower(text:str)->str:
     """Mengubah semua text menjadi huruf kecil"""
     return text.lower()
+@tool
+def get_weather():
+    """Mendapatkan cuaca saat ini dijakarta"""
+    # Koordinat Jakarta
+    lat = "-6.2088"
+    lon = "106.8456"
+    
+    # URL API Open-Meteo (Tanpa API Key)
+    # current_weather=true artinya minta data cuaca saat ini
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+    
+    try:
+        response = requests.get(url)
+        data = response.json()
+        
+        # Ambil data spesifik dari JSON
+        current = data['current_weather']
+        suhu = current['temperature']
+        kecepatan_angin = current['windspeed']
+        
+        # print("=== Cuaca Jakarta Saat Ini (Open-Meteo) ===")
+        # print(f"Suhu: {suhu}°C")
+        # print(f"Kecepatan Angin: {kecepatan_angin} km/h")
+        return current,suhu,kecepatan_angin
+        
+    except Exception as e:
+        return (f"Terjadi error: {e}")
 
-TOOLS=[multiply, add, to_lower]
+TOOLS=[multiply, add, to_lower,get_weather]
 
 # prompt
 
