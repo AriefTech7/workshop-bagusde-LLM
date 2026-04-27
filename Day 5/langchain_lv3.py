@@ -1,115 +1,74 @@
 from dotenv import load_dotenv
 load_dotenv()
-import requests
+
+import subprocess
+from langchain_openai import ChatOpenAI     
+from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_openai import ChatOpenAI # chatopenai berfungsi untuk memanggil llm openai
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder 
-# mengintegrasikan tool ke model ai
-from langchain_core.tools import tool 
-from langchain.agents import create_agent
 
-"""Note
-tidak bisa menggunakan function stroutputparser karena create_agent membutuhkan struktur khusus
-"""
 
-# Berikut adalah cara untuk membuat tool calling
-@tool # ini adalah dekuretor
-# setiap param harus dideklarasi tipe data dan tipe data apa yang akan dihasilkan
-def multiply(a:float, b:float)-> float:
-    """kalikan dua angka dan kembalikan nilainya"""
-    return a * b
 
 @tool
-def add(a:int, b:int)-> int: # function yang akan dijadikan tool harus memiliki Type Annotation(fitur ini berfungsi untuk menyarankan type data yang diinputkan)
-    """Menambahkan dua angka dan kembalikan nilainya"""
-    return a + b
+def run_linux_command(query: str) -> str:
+    """Fungsi untuk mendapatkan perintah Linux berdasarkan query pengguna."""
+    # linux_commands = {
+    #     'list files': 'ls',
+    #     'current directory': 'pwd',
+    #     'disk usage': 'du',
+    #     'check memory': 'free',
+    #     'network status': 'ifconfig'
+    # }
+    hasil = subprocess.run(query, shell=True, capture_output=True, text=True)
+    return f"hasil perintah '{query}':\n{hasil.stdout}\n{hasil.stderr}"
 
-@tool
-def to_lower(text:str)->str:
-    """Mengubah semua text menjadi huruf kecil"""
-    return text.lower()
-@tool
-def get_weather():
-    """Mendapatkan cuaca saat ini dijakarta"""
-    # Koordinat Jakarta
-    lat = "-6.2088"
-    lon = "106.8456"
-    
-    # URL API Open-Meteo (Tanpa API Key)
-    # current_weather=true artinya minta data cuaca saat ini
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
-    
-    try:
-        response = requests.get(url)
-        data = response.json()
-        
-        # Ambil data spesifik dari JSON
-        current = data['current_weather']
-        suhu = current['temperature']
-        kecepatan_angin = current['windspeed']
-        
-        # print("=== Cuaca Jakarta Saat Ini (Open-Meteo) ===")
-        # print(f"Suhu: {suhu}°C")
-        # print(f"Kecepatan Angin: {kecepatan_angin} km/h")
-        return current,suhu,kecepatan_angin
-        
-    except Exception as e:
-        return (f"Terjadi error: {e}")
-
-TOOLS=[multiply, add, to_lower,get_weather]
-
-# prompt
-
-
-"""
-ChatPromptTemplate berfungsi untuk system prompt
-MessagesPlaceholder berfungsi   
-"""
-
-"""
-flow chatbot biasa : input -> llm -> output
-flow chatbot menggunakan framework langchain: history message(chatprompt)->llm(charopenai)->output
-"""
-
-SYSTEM_PROMPT = """You are a helpful assistant.
-Use tools when they help solve the user's request.
-Prefer `multiply` for arithmetic like "x times y".
-Keep answers short and correct.
-"""
-# session id = primary key pada database
-prompt = ChatPromptTemplate.from_messages([
-    # format {role:...,content:...}
-    ('system',SYSTEM_PROMPT),
-    MessagesPlaceholder('chat_history'),
-    ('human', '{input}'), # human(langchain) sebagai role user(openai)
-    MessagesPlaceholder('agent_tool')
-])
+TOOLS =[run_linux_command]
 
 llm = ChatOpenAI(
-    model='gpt-5-nano',
-    base_url="https://ai.dinoiki.com/v1"
-    # api_key= untuk api key akan otomatis mencari api key ke file .env, so tak perlu deklasi api key 
+    model='gpt-4o-mini',
 )
 
-# flownya : prompt -> LLM -> analize -> execute
+memory = MemorySaver()
+# menentukan apakah agent perlukan tools atau tidak, jika diperlukan maka akan memanggil tools yang sudah didefinisikan
+# workflow: prompot -> llm -> agent -> analize(use tools or no) -> execute or response
 
 
-save_memory = MemorySaver()
-agent_with_memory = create_agent(
-    llm,
-    TOOLS,
-    checkpointer=save_memory,
-    system_prompt=SYSTEM_PROMPT
-)
+agent = create_react_agent(llm,TOOLS,checkpointer=memory)  
 
-# loop chat
-if __name__ == "__main__":
-    thread_id='demo-level-3'
-    config={'configurable':{'thread_id':thread_id}}
+# sesson_store = {}
+# def get_chat_history(session_id):
+#     if session_id not in sesson_store:
+#         sesson_store[session_id] = InMemoryChatMessageHistory()
+#     return sesson_store[session_id]
+
+# agent_memory = RunnableWithMessageHistory(
+#     agent_runnable,
+#     get_chat_history,
+#     input_key='input',
+#     history_messages_key='chat_history'
+# )
+
+session = {"configurable": {"thread_id": "user1-level2"}}  # Contoh session ID, bisa diganti sesuai kebutuhan
+
+# session_id = 'user1-level2'  # Contoh session ID, bisa diganti sesuai kebutuhan
+
+print("🐧 Linux Agent siap. Ketik 'exit' untuk keluar.")
 while True:
-    user = input("You: ").strip()
-    if user == "exit":
-        print("byee")
+    user = input('User: ').strip()
+    if user.lower() in ['exit', 'quit', 'keluar']:
+        print('Exiting...')
         break
-    ai_message = agent_with_memory.invoke({'messages':[('user',user)]},config=config)
-    print(f"AI: {ai_message['messages'][-1].content}")
+    response = agent.invoke({"messages":[("human",user)]},config=session)
+    print(f"assistant :{response['messages'][-1].content}")
+    
+
+
+
+# response = agent_memory.invoke({'input':user},
+    #                         config={'configurable': 
+    #                                 {'session_id': session_id}
+    #                                 }
+    #                         )
+    # print(f'Assistant: {response["output"]}')
+    
+    # print(f"\nsession_store: {sesson_store}\n")
