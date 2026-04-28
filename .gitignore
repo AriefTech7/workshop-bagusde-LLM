@@ -3,5 +3,5 @@
 /workspace.xml
 .env
 .bagusde_ai
-.idea/
-.vscode/
+.idea
+.vscode
