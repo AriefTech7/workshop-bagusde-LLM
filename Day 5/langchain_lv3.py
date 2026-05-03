@@ -12,13 +12,6 @@ from langgraph.checkpoint.memory import MemorySaver
 @tool
 def run_linux_command(query: str) -> str:
     """Fungsi untuk mendapatkan perintah Linux berdasarkan query pengguna."""
-    # linux_commands = {
-    #     'list files': 'ls',
-    #     'current directory': 'pwd',
-    #     'disk usage': 'du',
-    #     'check memory': 'free',
-    #     'network status': 'ifconfig'
-    # }
     hasil = subprocess.run(query, shell=True, capture_output=True, text=True)
     return f"hasil perintah '{query}':\n{hasil.stdout}\n{hasil.stderr}"
 
@@ -35,22 +28,9 @@ memory = MemorySaver()
 
 agent = create_react_agent(llm,TOOLS,checkpointer=memory)  
 
-# sesson_store = {}
-# def get_chat_history(session_id):
-#     if session_id not in sesson_store:
-#         sesson_store[session_id] = InMemoryChatMessageHistory()
-#     return sesson_store[session_id]
-
-# agent_memory = RunnableWithMessageHistory(
-#     agent_runnable,
-#     get_chat_history,
-#     input_key='input',
-#     history_messages_key='chat_history'
-# )
 
 session = {"configurable": {"thread_id": "user1-level2"}}  # Contoh session ID, bisa diganti sesuai kebutuhan
 
-# session_id = 'user1-level2'  # Contoh session ID, bisa diganti sesuai kebutuhan
 
 print("🐧 Linux Agent siap. Ketik 'exit' untuk keluar.")
 while True:
@@ -64,11 +44,3 @@ while True:
 
 
 
-# response = agent_memory.invoke({'input':user},
-    #                         config={'configurable': 
-    #                                 {'session_id': session_id}
-    #                                 }
-    #                         )
-    # print(f'Assistant: {response["output"]}')
-    
-    # print(f"\nsession_store: {sesson_store}\n")
